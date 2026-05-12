@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SWOT Analysis Practice</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f4; margin:20px; }
+h1, h2, h3 { margin-bottom:6px; }
+.section { background:#fff; padding:12px; border-radius:8px; margin-bottom:12px; }
+button { padding:8px 12px; margin-right:6px; border-radius:6px; border:1px solid #666; cursor:pointer; }
+button.active { background:#d9e8ff; }
+#cards { display:flex; flex-wrap:wrap; gap:8px; }
+.card { background:#fff; border:1px solid #777; border-radius:6px; padding:8px; cursor:grab; max-width:260px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.dropzone { min-height:140px; border:2px dashed #999; border-radius:8px; padding:6px; }
+.correct { background:#e6f7ea; border-color:green; }
+.incorrect { background:#fdeaea; border-color:red; }
+.feedback { font-size:0.9em; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<h1>SWOT Classification Practice</h1>
+<p>Drag each statement into the correct category. Submit to see feedback.</p>
+
+<div class="section">
+<strong>Difficulty:</strong>
+<button id="easyBtn" onclick="loadLevel('easy')">Easy</button>
+<button id="mediumBtn" onclick="loadLevel('medium')">Medium</button>
+<button id="hardBtn" onclick="loadLevel('hard')">Hard</button>
+</div>
+
+<div class="section" id="caseText"></div>
+
+<div class="section">
+<h2>Statements</h2>
+<div id="cards"></div>
+</div>
+
+<h2>SWOT Grid</h2>
+<div class="grid">
+<div><h3>Strengths</h3><div class="dropzone" data-zone="Strengths"></div></div>
+<div><h3>Weaknesses</h3><div class="dropzone" data-zone="Weaknesses"></div></div>
+<div><h3>Opportunities</h3><div class="dropzone" data-zone="Opportunities"></div></div>
+<div><h3>Threats</h3><div class="dropzone" data-zone="Threats"></div></div>
+</div>
+
+<br>
+<button onclick="checkAnswers()">Submit</button>
+<button onclick="loadLevel(currentLevel)">Reset</button>
+<p id="score"></p>
+
+<script>
+const gameData = {
+  easy: {
+    case: "<strong>PulseFit</strong> is a fitness-tracking app serving university students.",
+    cards: [
+      ["Strong brand recognition on campus","Strengths","Internal advantage that helps the firm compete"],
+      ["High app usability ratings","Strengths","Positive internal capability"],
+      ["Engaged student user community","Strengths","Internal resource that adds value"],
+      ["Experienced founding team","Strengths","Firm-level capability"],
+
+      ["Small marketing budget","Weaknesses","Internal limitation of the firm"],
+      ["Limited customer service staff","Weaknesses","Internal resource constraint"],
+      ["Dependence on app store visibility","Weaknesses","Internal reliance on external platforms"],
+      ["Few revenue streams","Weaknesses","Internal financial vulnerability"],
+
+      ["Growing interest in health and wellness","Opportunities","External trend the firm could exploit"],
+      ["Increasing demand for campus gyms","Opportunities","External growth possibility"],
+      ["Several nearby universities with similar psychographics in their student populations","Opportunities","External market opportunity"],
+      ["Rising smartphone adoption","Opportunities","External environmental change"],
+
+      ["Many competing fitness apps","Threats","External competitive pressure"],
+      ["Low switching costs for users","Threats","External market condition"],
+      ["Rapid changes in mobile technology","Threats","External technological risk"],
+      ["Concerns over student data privacy","Threats","External regulatory and social risk"]
+    ]
+  },
+
+  medium: {
+    case: "<strong>PulseFit</strong> is expanding nationally and adding premium features.",
+    cards: [
+      ["Advanced data analytics capabilities","Strengths","Internal capability that supports strategy"],
+      ["Strong relationships with campus partners","Strengths","Internal relational asset"],
+      ["Positive app store reviews","Strengths","Internal reputational strength"],
+      ["High student retention rates","Strengths","Internal performance indicator"],
+
+      ["Limited experience outside Canada","Weaknesses","Internal knowledge gap"],
+      ["Dependence on subscription revenue","Weaknesses","Internal revenue risk"],
+      ["Underdeveloped national brand awareness","Weaknesses","Internal marketing limitation"],
+      ["Limited customer support hours","Weaknesses","Internal service constraint"],
+
+      ["Potential corporate wellness partnerships","Opportunities","External partnership potential"],
+      ["Possible expansion opportunities into new provinces","Opportunities","External geographic growth"],
+      ["Growing acceptance of digital fitness tools","Opportunities","External social trend"],
+      ["Employer focus on employee wellness","Opportunities","External demand driver"],
+
+      ["Stricter data privacy regulations","Threats","External legal risk"],
+      ["Larger competitors with bigger budgets","Threats","External competitive threat"],
+      ["Price sensitivity among users","Threats","External market behavior"],
+      ["Platform dependency on app stores","Threats","External platform risk"]
+    ]
+  },
+
+  hard: {
+    case: "<strong>PulseFit</strong> is planning long-term global growth.",
+    cards: [
+      ["Highly skilled in-house developers","Strengths","Internal human capital"],
+      ["Ability to rapidly prototype features","Strengths","Internal dynamic capability"],
+      ["Strong learning-oriented culture","Strengths","Internal organizational asset"],
+      ["Deep proprietary user data insights","Strengths","Internal strategic resource"],
+
+      ["Limited international regulatory expertise","Weaknesses","Internal capability gap"],
+      ["Reliance on third-party cloud providers","Weaknesses","Internal dependency risk"],
+      ["Inconsistent experience across platforms","Weaknesses","Internal operational issue"],
+      ["Complexity of scaling customer support","Weaknesses","Internal growth challenge"],
+
+      ["Growth in preventive healthcare spending","Opportunities","External economic and social trend"],
+      ["Growth in wearable technology adoption","Opportunities","External strategic opportunity"],
+      ["Emerging markets adopting smartphones","Opportunities","External market expansion"],
+      ["Advances in AI personalization","Opportunities","External technological opportunity"],
+
+      ["Economic downturn reducing discretionary spending","Threats","External economic risk"],
+      ["Aggressive entry by Big Tech firms","Threats","External competitive threat"],
+      ["Fragmented global regulations","Threats","External legal complexity"],
+      ["Rising digital advertising costs","Threats","External cost pressure"]
+    ]
+  }
+};
+
+let currentLevel = "easy";
+let draggedCard = null;
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function loadLevel(level) {
+  currentLevel = level;
+  document.getElementById("score").textContent = "";
+
+  ["easy","medium","hard"].forEach(l =>
+    document.getElementById(l + "Btn").classList.remove("active")
+  );
+  document.getElementById(level + "Btn").classList.add("active");
+
+  document.getElementById("caseText").innerHTML = gameData[level].case;
+  document.getElementById("cards").innerHTML = "";
+  document.querySelectorAll(".dropzone").forEach(z => z.innerHTML = "");
+
+  const cards = [...gameData[level].cards];
+  shuffle(cards);
+
+  cards.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.textContent = item[0];
+    card.dataset.answer = item[1];
+    card.dataset.feedback = item[2];
+    card.draggable = true;
+    card.addEventListener("dragstart", () => draggedCard = card);
+    document.getElementById("cards").appendChild(card);
+  });
+}
+
+document.querySelectorAll(".dropzone").forEach(zone => {
+  zone.addEventListener("dragover", e => e.preventDefault());
+  zone.addEventListener("drop", () => draggedCard && zone.appendChild(draggedCard));
+});
+
+function checkAnswers() {
+  let correct = 0;
+  let total = gameData[currentLevel].cards.length;
+
+  document.querySelectorAll(".card").forEach(card => {
+    card.classList.remove("correct","incorrect");
+    const placedIn = card.parentElement.dataset.zone;
+
+    const existing = card.querySelector('.feedback');
+    if (existing) existing.remove();
+
+    if (placedIn === card.dataset.answer) {
+      card.classList.add("correct");
+      correct++;
+    } else if (placedIn) {
+      card.classList.add("incorrect");
+      const fb = document.createElement('div');
+      fb.className = 'feedback';
+      fb.textContent = card.dataset.feedback;
+      card.appendChild(fb);
+    }
+  });
+
+  document.getElementById("score").textContent = `You correctly classified ${correct} out of ${total} statements.`;
+}
+
+loadLevel("easy");
+</script>
+</body>
+</html>
